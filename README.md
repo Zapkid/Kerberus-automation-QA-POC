@@ -79,13 +79,100 @@ placeholder step in `.github/workflows/tests.yml`).
 
 ## Setup
 
+Follow these steps in order the first time you set up the repo. Every step
+after step 1 assumes you're in the repo root.
+
+### 1. Prerequisites
+
+- **Node.js 20+** and **npm 10+** (`node -v`, `npm -v`). Any recent LTS works;
+  CI pins Node 20.
+- **Java 11+** on your `PATH` (`java -version`) - required by the Allure
+  commandline tool (`allure-commandline`, installed as a dev dependency) to
+  generate/open HTML reports. Not needed just to *run* tests, only for
+  `npm run report:generate` / `report:open` / `report:serve`.
+- Linux/CI runners: enough packages for a headed-capable Chromium (installed
+  automatically by `playwright install --with-deps`, which needs `sudo`
+  on most distros).
+- A Chromium-based Chrome or Chromium install is **not** required separately -
+  Playwright downloads its own Chromium in step 3.
+
+### 2. Install dependencies
+
 ```bash
 npm install
-npx playwright install --with-deps chromium
-cp .env.example .env        # fill in a funds-free test wallet seed phrase
-npm run prepare:extensions  # downloads MetaMask
-# follow extensions/pocket-universe/README.md to provision Pocket Universe
 ```
+
+This installs Playwright, `allure-playwright`, `allure-commandline`,
+TypeScript, ESLint/Prettier, and the extension-download tooling.
+
+### 3. Install the Playwright browser binary
+
+```bash
+npx playwright install --with-deps chromium
+```
+
+Only Chromium is needed - extension loading (`--load-extension`) is a
+Chromium-only feature, so this project doesn't use Firefox/WebKit.
+
+### 4. Configure environment variables
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env`:
+
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `BASE_URL` | yes | URL of the dApp under test. |
+| `METAMASK_SEED_PHRASE` | yes | Seed phrase for a **disposable, funds-free** test wallet only (e.g. the well-known Hardhat/Anvil default account, or a testnet-only wallet). Never a real wallet. |
+| `METAMASK_PASSWORD` | yes | Password MetaMask will be unlocked with during onboarding. |
+| `METAMASK_NETWORK_NAME`, `METAMASK_RPC_URL`, `METAMASK_CHAIN_ID`, `METAMASK_SYMBOL` | yes | The custom network added to MetaMask on first run (defaults target a local `http://127.0.0.1:8545` chain - point these at whatever chain your dApp/tests expect, e.g. a local Hardhat/Anvil node or a public testnet). |
+| `METAMASK_VERSION` | yes | Pinned MetaMask release version downloaded by step 5. Bump deliberately, not automatically - a version bump can shift the `data-testid` selectors the MetaMask page objects rely on. |
+| `POCKET_UNIVERSE_PATH` | yes | Path to the unpacked Pocket Universe extension directory. Defaults to `./extensions/pocket-universe` (step 6). |
+| `HEADLESS` | no | `true`/`false`. Keep `false` locally the first time so you can watch onboarding run; CI sets `true`. |
+| `SLOW_MO` | no | Milliseconds to slow down each Playwright action by, useful while debugging the onboarding flow. |
+
+### 5. Download the MetaMask extension
+
+```bash
+npm run prepare:extensions
+```
+
+This fetches the MetaMask release zip matching `METAMASK_VERSION` from
+MetaMask's public GitHub releases and unpacks it into
+`extensions/metamask/`. Safe to re-run; it skips the download if
+`extensions/metamask/manifest.json` already exists. Delete
+`extensions/metamask/` to force a re-download after changing
+`METAMASK_VERSION`.
+
+### 6. Provision the Pocket Universe extension (manual, one-time)
+
+Pocket Universe is closed-source and only distributed via the Chrome Web
+Store, so it **cannot** be downloaded by a script. Follow
+[`extensions/pocket-universe/README.md`](extensions/pocket-universe/README.md)
+to extract the unpacked extension folder from a Chrome install (or a `.crx`)
+and place it at `extensions/pocket-universe/` (or wherever
+`POCKET_UNIVERSE_PATH` points). When done,
+`extensions/pocket-universe/manifest.json` must exist.
+
+In CI, this step is instead provisioned from a private artifact/secret store
+- see the placeholder step in `.github/workflows/tests.yml`.
+
+### 7. Verify the setup
+
+```bash
+npm run typecheck   # tsc --noEmit - confirms the project compiles
+npx playwright test --list   # confirms config/fixtures load correctly
+npm run test:smoke  # actually launches Chromium with both extensions and
+                     # onboards MetaMask - the real end-to-end check
+```
+
+`test:smoke` is the definitive check: it launches the persistent Chromium
+context, loads both extensions, onboards/unlocks the MetaMask wallet, and
+asserts both extension IDs resolve - i.e. it proves steps 1-6 were done
+correctly. If it fails, re-check the table in step 4 and the extension
+directories from steps 5-6 first.
 
 ## Running tests
 
