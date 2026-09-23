@@ -88,11 +88,9 @@ after step 1 assumes you're in the repo root.
 ### 1. Prerequisites
 
 - **Node.js 20+** and **npm 10+** (`node -v`, `npm -v`). Any recent LTS works;
-  CI pins Node 20.
-- **Java 11+** on your `PATH` (`java -version`) - required by the Allure
-  commandline tool (`allure-commandline`, installed as a dev dependency) to
-  generate/open HTML reports. Not needed just to *run* tests, only for
-  `npm run report:generate` / `report:open` / `report:serve`.
+  CI pins Node 20. No Java/JVM is required anywhere in this repo - the
+  `allure` CLI (installed as a dev dependency) that generates/opens HTML
+  reports is pure Node.js, unlike the older Java-based `allure-commandline`.
 - Linux/CI runners: enough packages for a headed-capable Chromium (installed
   automatically by `playwright install --with-deps`, which needs `sudo`
   on most distros).
@@ -105,8 +103,9 @@ after step 1 assumes you're in the repo root.
 npm install
 ```
 
-This installs Playwright, `allure-playwright`, `allure-commandline`,
-TypeScript, ESLint/Prettier, and the extension-download tooling.
+This installs Playwright, `allure-playwright` (the reporter) and `allure`
+(the pure Node.js report CLI - no Java involved), TypeScript,
+ESLint/Prettier, and the extension-download tooling.
 
 ### 3. Install the Playwright browser binary
 
@@ -240,13 +239,14 @@ a target, inspect its markup (`npx playwright codegen <url>`) and adjust
 ## Allure reporting
 
 Test runs write raw results to `allure-results/` via the `allure-playwright`
-reporter configured in `playwright.config.ts`. Generate and view the HTML
-report with:
+reporter configured in `playwright.config.ts`. Reports are built with the
+[Allure Report CLI](https://allurereport.org/docs/playwright/) (`allure`,
+pure Node.js - no Java/JVM required, unlike the older `allure-commandline`):
 
 ```bash
-npm run report:generate   # allure-results -> allure-report
-npm run report:open       # opens the generated report
-# or, for a live server without a separate generate step:
+npm run report:generate   # allure-results -> static allure-report/ build
+npm run report:open       # serves the already-generated allure-report/
+# or, to generate + serve in one step without a separate build:
 npm run report:serve
 ```
 
