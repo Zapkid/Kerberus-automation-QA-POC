@@ -31,6 +31,18 @@ export class PocketUniversePage extends BasePage {
     await this.overlay.waitFor({ state: 'visible', timeout: timeoutMs });
   }
 
+  /**
+   * Non-waiting check used by baseline ("extension not loaded") specs to
+   * assert the overlay never appears, after giving the page a short grace
+   * period to have rendered it if it were going to.
+   */
+  async isOverlayVisible(graceMs = 3_000): Promise<boolean> {
+    return this.overlay
+      .waitFor({ state: 'visible', timeout: graceMs })
+      .then(() => true)
+      .catch(() => false);
+  }
+
   async isSimulationFlaggedRisky(): Promise<boolean> {
     return this.locator('[data-pocket-universe-overlay][data-risk="high"]').isVisible();
   }

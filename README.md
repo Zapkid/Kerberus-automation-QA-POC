@@ -36,6 +36,9 @@ src/
 tests/
   smoke/                    fast checks that both extensions loaded correctly
   example/                  example specs showing the intended usage pattern
+  polymarket/               real-dApp specs proving Pocket Universe's UI
+                             (with vs. without the extension loaded)
+  security/                 verifies Pocket Universe's malicious-tx warning
 playwright.config.ts        Allure + HTML reporters, trace/video/screenshot
 ```
 
@@ -130,6 +133,9 @@ Then edit `.env`:
 | `METAMASK_NETWORK_NAME`, `METAMASK_RPC_URL`, `METAMASK_CHAIN_ID`, `METAMASK_SYMBOL` | yes | The custom network added to MetaMask on first run (defaults target a local `http://127.0.0.1:8545` chain - point these at whatever chain your dApp/tests expect, e.g. a local Hardhat/Anvil node or a public testnet). |
 | `METAMASK_VERSION` | yes | Pinned MetaMask release version downloaded by step 5. Bump deliberately, not automatically - a version bump can shift the `data-testid` selectors the MetaMask page objects rely on. |
 | `POCKET_UNIVERSE_PATH` | yes | Path to the unpacked Pocket Universe extension directory. Defaults to `./extensions/pocket-universe` (step 6). |
+| `POLYMARKET_URL` | no | Defaults to `https://polymarket.com`. Used by `tests/polymarket/*.spec.ts`. |
+| `ALLOW_REAL_POLYMARKET_TRADE` | no | `true`/`false`, default `false`. Keep `false` unless you deliberately want a Polymarket spec to submit a real, funded transaction - see "Polymarket + Pocket Universe UI-diff tests" below. |
+| `SCAM_DAPP_URL` | no | A **controlled** phishing-simulation target for `tests/security/scam-dapp-warning.spec.ts`. Never a live scam site. Leave blank to skip that spec - see "Pocket Universe malicious-dApp warning test" below. |
 | `HEADLESS` | no | `true`/`false`. Keep `false` locally the first time so you can watch onboarding run; CI sets `true`. |
 | `SLOW_MO` | no | Milliseconds to slow down each Playwright action by, useful while debugging the onboarding flow. |
 
@@ -177,11 +183,59 @@ directories from steps 5-6 first.
 ## Running tests
 
 ```bash
-npm test              # headless per .env, all tests
-npm run test:headed   # watch the browser
-npm run test:smoke    # tests tagged @smoke (extension load checks)
-npm run test:ui       # Playwright UI mode
+npm test               # headless per .env, all tests
+npm run test:headed    # watch the browser
+npm run test:smoke     # tests tagged @smoke (extension load checks)
+npm run test:polymarket # tests tagged @polymarket
+npm run test:security  # tests tagged @security
+npm run test:ui        # Playwright UI mode
 ```
+
+### Polymarket + Pocket Universe UI-diff tests
+
+`tests/polymarket/` proves Pocket Universe adds real UI to a real dApp
+(Polymarket, on Polygon mainnet - not a test fixture), by running the
+*identical* connect-wallet-and-start-a-trade flow twice:
+
+- `polymarket-with-pocket-universe.spec.ts` - Pocket Universe loaded
+  (`usePocketUniverse: true`, the default) - asserts its simulation overlay
+  **appears**.
+- `polymarket-without-pocket-universe.spec.ts` - a "bare MetaMask" context
+  (`test.use({ usePocketUniverse: false })`) - asserts that same overlay
+  **never appears**, proving it's something the extension adds rather than
+  part of Polymarket's own UI.
+
+Two things to set up before these will pass:
+
+1. **`PolymarketPage` selectors are unverified.** This environment's network
+   policy blocks browsing to polymarket.com, so `src/pages/dapp/PolymarketPage.ts`
+   was written against Polymarket's general public UI shape using resilient
+   role/text-based locators, not confirmed against the live DOM. Run
+   `npx playwright codegen https://polymarket.com` locally, click through
+   connect-wallet -> open a market -> start a buy order, and reconcile the
+   recorded selectors with the ones in that file.
+2. **A funded wallet, if you want a real trade to go through.** By default
+   both specs stop at the order review / wallet confirmation step and
+   cancel - `ALLOW_REAL_POLYMARKET_TRADE=false` in `.env.example`. Polymarket
+   trades real USDC on Polygon mainnet; only flip that flag with a wallet
+   (real MATIC for gas + real USDC) you're deliberately willing to spend
+   from, and update `METAMASK_NETWORK_NAME`/`METAMASK_RPC_URL`/
+   `METAMASK_CHAIN_ID` to point at Polygon instead of the local test network.
+
+### Pocket Universe malicious-dApp warning test
+
+`tests/security/scam-dapp-warning.spec.ts` verifies Pocket Universe actually
+renders a "risky" verdict when interacting with a malicious dApp. It targets
+whatever URL you set as `SCAM_DAPP_URL` and skips itself with a clear
+message if that's unset - **no default target is bundled with this repo.**
+
+Set `SCAM_DAPP_URL` to a **controlled phishing-simulation target only**
+(an internal red-team fixture, or a security vendor's own published test/demo
+malicious dApp) - never a live, real-world scam site. Running an automated
+wallet against a real scam site risks genuine interaction with malicious
+infrastructure and is out of scope for this repo to encourage. Once you have
+a target, inspect its markup (`npx playwright codegen <url>`) and adjust
+`src/pages/dapp/ScamDappPage.ts`'s locators to match.
 
 ## Allure reporting
 

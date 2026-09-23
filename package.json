@@ -10,6 +10,8 @@
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "test:smoke": "playwright test --grep @smoke",
+    "test:polymarket": "playwright test --grep @polymarket",
+    "test:security": "playwright test --grep @security",
     "test:ui": "playwright test --ui",
     "report:generate": "allure generate ./allure-results --clean -o ./allure-report",
     "report:open": "allure open ./allure-report",

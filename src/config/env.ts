@@ -33,6 +33,24 @@ export const env = {
       : path.resolve(process.cwd(), 'extensions/pocket-universe'),
   },
 
+  polymarket: {
+    url: process.env.POLYMARKET_URL ?? 'https://polymarket.com',
+    // Safety gate: Polymarket trades real USDC on Polygon mainnet. By
+    // default the Polymarket specs stop at Pocket Universe's simulation
+    // preview / MetaMask's confirmation screen and then cancel, so a CI or
+    // local run never moves real funds. Set this to 'true' only if you
+    // deliberately want a test to click through and submit a real,
+    // funded transaction.
+    allowRealTrade: (process.env.ALLOW_REAL_POLYMARKET_TRADE ?? 'false').toLowerCase() === 'true',
+  },
+
+  // A dApp/site known to trigger Pocket Universe's malicious-transaction
+  // warning, used to verify that warning actually renders. Intentionally
+  // has NO default - never point this at a live, real-world scam site;
+  // use a controlled phishing-simulation harness instead. The spec that
+  // uses this skips itself with a clear message when it's unset.
+  scamDappUrl: process.env.SCAM_DAPP_URL,
+
   headless: (process.env.HEADLESS ?? 'false').toLowerCase() === 'true',
   slowMo: Number(process.env.SLOW_MO ?? 0),
 };
