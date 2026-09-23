@@ -27,7 +27,11 @@ jobs:
       - name: Download MetaMask extension
         run: npm run prepare:extensions
         env:
-          METAMASK_VERSION: ${{ vars.METAMASK_VERSION }}
+          # `vars.METAMASK_VERSION` is an empty string (not unset) when no
+          # repo variable is configured, which would silently override the
+          # fallback baked into src/config/env.ts (`??` only falls back on
+          # `undefined`). The `||` here keeps that fallback intact instead.
+          METAMASK_VERSION: ${{ vars.METAMASK_VERSION || '11.16.14' }}
 
       - name: Restore Pocket Universe extension
         # Pocket Universe is closed-source and cannot be fetched publicly.
@@ -45,9 +49,12 @@ jobs:
       - name: Run tests
         run: npm test
         env:
-          BASE_URL: ${{ vars.BASE_URL }}
-          METAMASK_SEED_PHRASE: ${{ secrets.METAMASK_SEED_PHRASE }}
-          METAMASK_PASSWORD: ${{ secrets.METAMASK_PASSWORD }}
+          # Same empty-string-vs-unset issue as above: fall back to the same
+          # defaults src/config/env.ts uses so an unconfigured repo/secret
+          # doesn't silently override them with "".
+          BASE_URL: ${{ vars.BASE_URL || 'https://example-dapp.kerberus.com' }}
+          METAMASK_SEED_PHRASE: ${{ secrets.METAMASK_SEED_PHRASE || 'test test test test test test test test test test test junk' }}
+          METAMASK_PASSWORD: ${{ secrets.METAMASK_PASSWORD || 'Password1234!' }}
           CI: true
           HEADLESS: true
 
