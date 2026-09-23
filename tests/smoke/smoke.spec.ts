@@ -16,8 +16,10 @@ test.describe('Environment smoke checks @smoke', () => {
     context,
     pocketUniverseExtensionId,
   }) => {
+    // Default fixture config (usePocketUniverse: true) guarantees this is non-null.
+    expect(pocketUniverseExtensionId).not.toBeNull();
     expect(pocketUniverseExtensionId).toMatch(/^[a-z]{32}$/);
-    const installed = await PocketUniversePage.isInstalled(context, pocketUniverseExtensionId);
+    const installed = await PocketUniversePage.isInstalled(context, pocketUniverseExtensionId!);
     expect(installed).toBe(true);
   });
 });

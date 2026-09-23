@@ -19,24 +19,38 @@ function assertUnpackedExtension(dir: string, humanName: string, howTo: string):
   }
 }
 
+export interface ResolveExtensionsOptions {
+  /**
+   * Whether Pocket Universe should be loaded alongside MetaMask. Defaults to
+   * true. Set to false to get a "bare MetaMask" context - used by baseline
+   * tests that need to prove behavior *without* the extension present.
+   */
+  includePocketUniverse?: boolean;
+}
+
 /** Resolves the on-disk directories for every extension that must be loaded before a test starts. */
-export function resolveExtensions(): ExtensionDescriptor[] {
+export function resolveExtensions(options: ResolveExtensionsOptions = {}): ExtensionDescriptor[] {
+  const includePocketUniverse = options.includePocketUniverse ?? true;
+
   assertUnpackedExtension(
     METAMASK_DIR,
     'MetaMask',
     'Run "npm run prepare:extensions" to download and unpack it automatically.',
   );
-  assertUnpackedExtension(
-    env.pocketUniverse.path,
-    'Pocket Universe',
-    'Pocket Universe cannot be auto-downloaded (closed-source, Chrome Web Store only). ' +
-      'See extensions/pocket-universe/README.md for how to obtain the unpacked extension folder.',
-  );
 
-  return [
-    { name: 'metamask', dir: METAMASK_DIR },
-    { name: 'pocket-universe', dir: env.pocketUniverse.path },
-  ];
+  const extensions: ExtensionDescriptor[] = [{ name: 'metamask', dir: METAMASK_DIR }];
+
+  if (includePocketUniverse) {
+    assertUnpackedExtension(
+      env.pocketUniverse.path,
+      'Pocket Universe',
+      'Pocket Universe cannot be auto-downloaded (closed-source, Chrome Web Store only). ' +
+        'See extensions/pocket-universe/README.md for how to obtain the unpacked extension folder.',
+    );
+    extensions.push({ name: 'pocket-universe', dir: env.pocketUniverse.path });
+  }
+
+  return extensions;
 }
 
 /** Comma-separated extension paths, as consumed by Chromium's --load-extension flag. */

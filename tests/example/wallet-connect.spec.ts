@@ -40,9 +40,10 @@ test.describe('Wallet connect flow', () => {
 
     // Pocket Universe intercepts the tx request and renders its simulation
     // overlay in the dApp tab before MetaMask's own confirmation appears.
-    await pocketUniverse.waitForSimulation();
-    expect(await pocketUniverse.isSimulationFlaggedRisky()).toBe(false);
-    await pocketUniverse.approveInOverlay();
+    // Non-null: default fixture config (usePocketUniverse: true) guarantees this.
+    await pocketUniverse!.waitForSimulation();
+    expect(await pocketUniverse!.isSimulationFlaggedRisky()).toBe(false);
+    await pocketUniverse!.approveInOverlay();
 
     await metamask.confirmTransaction();
   });
