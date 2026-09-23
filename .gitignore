@@ -1,0 +1,33 @@
+node_modules/
+dist/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Allure
+allure-results/
+allure-report/
+
+# Browser extensions (downloaded/user-provided binaries, never committed)
+extensions/metamask/*
+extensions/pocket-universe/*
+!extensions/metamask/.gitkeep
+!extensions/pocket-universe/.gitkeep
+!extensions/pocket-universe/README.md
+
+# Persistent browser profiles used to cache wallet onboarding
+.browser-profiles/
+
+# Env
+.env
+.env.local
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+*.log
